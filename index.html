@@ -63,10 +63,11 @@
         }
     </style>
 </head>
-<body class="bg-gray-900 text-white overflow-hidden h-screen flex flex-col">
+<!-- FIX: Removed h-screen and overflow-hidden from body -->
+<body class="bg-gray-900 text-white">
 
-    <!-- Main container for all views -->
-    <div id="app-container" class="flex flex-col h-full">
+    <!-- FIX: Added h-screen here to correctly size the app on mobile -->
+    <div id="app-container" class="flex flex-col h-screen">
         <main class="flex-grow overflow-y-auto relative">
             <!-- Map View -->
             <div id="view-map" class="h-full w-full">
@@ -689,7 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    init(); 
+    init();
 });
 </script>
 </body>
