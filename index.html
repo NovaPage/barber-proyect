@@ -1,86 +1,696 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Maik</title>
-	<link rel="stylesheet" href="index.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tequendama Trails - Cámara Funcional</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet CSS & JS for maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- html5-qrcode JS for QR scanning -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <style>
+        /* Basic styles */
+        #map { height: 100%; width: 100%; cursor: pointer; }
+        body { font-family: 'Inter', sans-serif; }
+
+        /* Styles for QR Reader container */
+        #qr-reader {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background-color: #1f2937;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        /* Force video element to fill the container */
+        #qr-reader video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+        }
+
+        /* Custom animation for notifications */
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; transform: translateY(20px); }
+            10%, 90% { opacity: 1; transform: translateY(0); }
+        }
+        .toast-notification {
+            animation: fadeInOut 4s ease-in-out forwards;
+        }
+        /* Custom icon pulse animation */
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
+            70% { transform: scale(1.2); box-shadow: 0 0 0 15px rgba(52, 211, 153, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        /* Simulation toggle styles */
+        #simulation-toggle.sim-on > div {
+            transform: translateX(1.5rem); /* 24px */
+        }
+        /* Drawer animation */
+        #artemon-info-drawer.is-open {
+            transform: translateY(0);
+        }
+    </style>
 </head>
-<body>
-	<header>
-		<div class="deconstructed">
-			Barber Maag
-			<div>Barber Maag</div>
-			<div>Barber Maag</div>
-			<div>Barber Maag</div>
-			<div>Barber Maag</div>
-		  </div>
-	</header>
+<body class="bg-gray-900 text-white overflow-hidden h-screen flex flex-col">
 
-	<div class="container">
-		<div class="producto">
-			<img src="Medios/Maag.png" alt="Producto 1">
-			<h2>Producto 1</h2>
-			<p>Descripción del producto 1</p>
-		</div>
+    <!-- Main container for all views -->
+    <div id="app-container" class="flex flex-col h-full">
+        <main class="flex-grow overflow-y-auto relative">
+            <!-- Map View -->
+            <div id="view-map" class="h-full w-full">
+                <div id="map" class="bg-gray-700"></div>
+            </div>
 
-		<div class="producto">
-			<img src="Medios/Maag.png" alt="Producto 2">
-			<h2>Producto 2</h2>
-			<p>Descripción del producto 2</p>
-		</div>
+            <!-- Inventory View -->
+            <div id="view-inventory" class="hidden p-4 md:p-6">
+                <h1 class="text-3xl font-bold mb-2 text-emerald-400">Inventario</h1>
+                <p class="mb-4 text-gray-300">Has capturado <span id="inventory-count">0</span> de 40 Artemones.</p>
+                <div class="w-full bg-gray-700 rounded-full h-4 mb-6">
+                    <div id="inventory-progress" class="bg-emerald-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <div id="inventory-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                    <!-- Artemon cards will be injected here -->
+                </div>
+            </div>
 
-		<div class="producto">
-			<img src="Medios/Maag.png" alt="Producto 3">
-			<h2>Producto 3</h2>
-			<p>Descripción del producto 3</p>
-		</div>
+            <!-- Profile View -->
+            <div id="view-profile" class="hidden p-6 flex flex-col items-center justify-center h-full">
+                <img src="https://placehold.co/128x128/10B981/FFFFFF?text=A" alt="Avatar" class="rounded-full w-32 h-32 mb-4 border-4 border-emerald-500">
+                <h1 class="text-2xl font-bold mb-2">Jugador Explorador</h1>
+                <p class="text-gray-400 mb-6">Progreso: <span id="profile-progress">0</span>/40</p>
+                <button id="reset-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105">
+                    Resetear y empezar de nuevo
+                </button>
+            </div>
+        </main>
 
-		<div class="producto">
-			<img src="Medios/Maag.png" alt="Producto 4">
-			<h2>Producto 4</h2>
-			<p>Descripción del producto 4</p>
-		</div>
+        <!-- Bottom Navigation -->
+        <nav class="bg-gray-800 p-2 flex justify-around items-center w-full flex-shrink-0">
+            <button data-view="map" class="nav-button p-2 rounded-lg text-emerald-400 flex flex-col items-center w-1/3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <span class="text-xs mt-1">Mapa</span>
+            </button>
+            <button data-view="inventory" class="nav-button p-2 rounded-lg text-gray-400 flex flex-col items-center w-1/3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+                <span class="text-xs mt-1">Inventario</span>
+            </button>
+            <button data-view="profile" class="nav-button p-2 rounded-lg text-gray-400 flex flex-col items-center w-1/3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                <span class="text-xs mt-1">Perfil</span>
+            </button>
+        </nav>
 
-		<div class="producto">
-			<img src="Medios/Maag.png" alt="Producto 5">
-			<h2>Producto 5</h2>
-			<p>Descripción del producto 5</p>
-		</div>
+        <!-- Floating Action Button for Location -->
+        <button id="locate-me-button" class="absolute bottom-20 right-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full p-4 shadow-lg z-10 transition-transform transform hover:scale-110">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+        </button>
 
-		<div class="producto">
-			<img src="Medios/Maag.png" alt="Producto 6">
-			<h2>Producto 6</h2>
-			<p>Descripción del producto 6</p>
-		</div>
+        <!-- Simulation Mode Toggle -->
+        <div id="simulation-controls" class="absolute bottom-20 left-4 bg-gray-800 p-2 rounded-lg shadow-lg z-10 flex items-center space-x-2">
+            <span class="text-xs font-bold text-white">Simulación</span>
+            <button id="simulation-toggle" class="w-12 h-6 rounded-full bg-emerald-500 flex items-center transition-colors duration-300 p-1 sim-on">
+                <div class="w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-300"></div>
+            </button>
+        </div>
+    </div>
 
-		<div class="producto">
-			<img src="Medios/Maag.png" alt="Producto 6">
-			<h2>Producto 6</h2>
-			<p>Descripción del producto 6</p>
-		</div>
+    <!-- QR Scanner View -->
+    <div id="view-scanner" class="hidden p-4 flex-col items-center justify-center h-full w-full bg-black fixed inset-0 z-50">
+        <div class="bg-gray-800 p-4 rounded-lg w-full max-w-md">
+            <h2 class="text-xl font-bold mb-4 text-center text-emerald-400">Escanea el Código QR</h2>
+            <div id="qr-reader"></div>
+            <div class="mt-4 space-y-2">
+                <button id="simulate-scan-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
+                    Simular Escaneo Exitoso
+                </button>
+                <button id="close-scanner-button" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
 
-		<div class="producto">
-			<img src="Medios/Maag.png" alt="Producto 6">
-			<h2>Producto 6</h2>
-			<p>Descripción del producto 6</p>
-		</div>
+    <!-- Artemon Info Drawer -->
+    <div id="artemon-info-drawer" class="fixed inset-0 bg-gray-900 bg-opacity-95 hidden items-center justify-center z-50 p-4">
+        <div class="w-full max-w-md mx-auto bg-gray-800 rounded-2xl shadow-2xl p-6">
+            <div class="text-center">
+                <div class="text-6xl mb-2">🎉</div>
+                <h2 id="drawer-artemon-name" class="text-3xl font-bold mb-2 text-emerald-400"></h2>
+                <p class="text-gray-300 mb-4">¡Lo has añadido a tu colección!</p>
+                
+                <div class="bg-gray-700 p-4 rounded-lg text-left">
+                    <h3 class="text-lg font-bold text-white mb-3">Estadísticas</h3>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+                        <div class="font-semibold text-gray-400">Tipo:</div>
+                        <div id="drawer-artemon-type" class="font-bold text-white"></div>
+                        
+                        <div class="font-semibold text-gray-400">Hábitat:</div>
+                        <div id="drawer-artemon-habitat" class="font-bold text-white"></div>
 
-		<div class="producto">
-			<img src="Medios/Maag.png" alt="Producto 6">
-			<h2>Producto 6</h2>
-			<p>Descripción del producto 6</p>
-		</div>
+                        <div class="font-semibold text-gray-400">Altura:</div>
+                        <div id="drawer-artemon-height" class="font-bold text-white"></div>
 
-		<div class="producto">
-			<img src="Medios/Maag.png" alt="Producto 6">
-			<h2>Producto 6</h2>
-			<p>Descripción del producto 6</p>
-		</div>
-	</div>
+                        <div class="font-semibold text-gray-400">Peso:</div>
+                        <div id="drawer-artemon-weight" class="font-bold text-white"></div>
+                    </div>
+                     <p class="text-sm italic text-gray-400 mt-4"><strong>Dato curioso:</strong> <span id="drawer-artemon-fact"></span></p>
+                </div>
 
-	<a class="float-nav-2" href="#hashLink"><img src="Medios/logo-whatsapp.png" width="50px"></a>
+                <button id="close-drawer-button" class="mt-6 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-lg w-full">Genial</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Final Reward Screen -->
+    <div id="final-reward-screen" class="hidden fixed inset-0 bg-gradient-to-br from-gray-900 to-emerald-900 flex items-center justify-center z-50 p-4">
+        <div class="bg-white text-gray-800 rounded-lg p-8 shadow-2xl transform transition-all scale-95 max-w-md w-full border-4 border-yellow-400">
+            <div class="text-center">
+                <div class="text-4xl mb-4">🏆</div>
+                <h1 class="text-3xl font-bold text-yellow-500 mb-2">¡Misión Cumplida!</h1>
+                <p class="text-gray-600 mb-4">Has completado la colección de Tequendama Trails.</p>
+                <div class="border-t-2 border-b-2 border-dashed border-gray-300 my-6 py-4">
+                    <h3 class="text-xl font-semibold">Certificado de Maestro Artemón</h3>
+                    <p class="mt-2">Otorgado a:</p>
+                    <p class="text-2xl font-cursive text-emerald-600 my-2">Jugador Explorador</p>
+                    <p class="text-sm">Por capturar los 40 Artemones el <span id="completion-date"></span>.</p>
+                </div>
+                <button id="restart-game-button" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg w-full mt-4">Jugar de Nuevo</button>
+            </div>
+        </div>
+    </div>
 
+    <!-- Toast Notification -->
+    <div id="toast" class="hidden fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-700 text-white py-2 px-4 rounded-lg shadow-lg z-50">
+        <p id="toast-message"></p>
+    </div>
+
+    <!-- Confirmation Modal for Reset -->
+    <div id="confirm-reset-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 rounded-lg p-6 text-center shadow-2xl max-w-sm w-full">
+            <div class="text-4xl mb-4">⚠️</div>
+            <h2 class="text-xl font-bold mb-2 text-yellow-400">¿Estás seguro?</h2>
+            <p class="text-gray-300 mb-6">Esta acción borrará todo tu progreso de forma permanente. No se puede deshacer.</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancel-reset-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg">Cancelar</button>
+                <button id="confirm-reset-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Sí, borrar</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- CONFIGURATION & CONSTANTS ---
+    const TOTAL_ARTEMONES = 40;
+    const PROXIMITY_THRESHOLD = 50; // meters
+    const TEQUENDAMA_COORDS = { lat: 4.6128878, lon: -74.0708003 };
+    const RADIUS_METERS = 100; // meters
+
+    // --- DOM ELEMENTS ---
+    const appContainer = document.getElementById('app-container');
+    const scannerView = document.getElementById('view-scanner');
+    const views = {
+        map: document.getElementById('view-map'),
+        inventory: document.getElementById('view-inventory'),
+        profile: document.getElementById('view-profile'),
+    };
+    const navButtons = document.querySelectorAll('.nav-button');
+    const locateMeButton = document.getElementById('locate-me-button');
+    const closeScannerButton = document.getElementById('close-scanner-button');
+    const resetButton = document.getElementById('reset-button');
+    const finalRewardScreen = document.getElementById('final-reward-screen');
+    const restartGameButton = document.getElementById('restart-game-button');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+    const confirmResetModal = document.getElementById('confirm-reset-modal');
+    const cancelResetButton = document.getElementById('cancel-reset-button');
+    const confirmResetButton = document.getElementById('confirm-reset-button');
+    const simulationToggle = document.getElementById('simulation-toggle');
+    const simulateScanButton = document.getElementById('simulate-scan-button');
+    
+    // Drawer elements
+    const artemonInfoDrawer = document.getElementById('artemon-info-drawer');
+    const drawerArtemonName = document.getElementById('drawer-artemon-name');
+    const drawerArtemonFact = document.getElementById('drawer-artemon-fact');
+    const drawerArtemonType = document.getElementById('drawer-artemon-type');
+    const drawerArtemonHabitat = document.getElementById('drawer-artemon-habitat');
+    const drawerArtemonHeight = document.getElementById('drawer-artemon-height');
+    const drawerArtemonWeight = document.getElementById('drawer-artemon-weight');
+    const closeDrawerButton = document.getElementById('close-drawer-button');
+
+    // --- STATE MANAGEMENT ---
+    let state = {
+        artemones: [],
+        player: {
+            position: null,
+            marker: null,
+        },
+        map: null,
+        qrScanner: null,
+        activeArtemonToScan: null,
+        isSimulationMode: true,
+        locationWatcherId: null,
+    };
+
+    // --- HELPER FUNCTIONS ---
+    function generateRandomPoint(center, radius) {
+        const y0 = center.lat;
+        const x0 = center.lon;
+        const rd = radius / 111300;
+        const u = Math.random();
+        const v = Math.random();
+        const w = rd * Math.sqrt(u);
+        const t = 2 * Math.PI * v;
+        const x = w * Math.cos(t);
+        const y = w * Math.sin(t);
+        return { 'lat': y + y0, 'lon': x + x0 };
+    }
+
+    function generateArtemones() {
+        const names = ["Aquafluff", "Geodude", "Sparky", "Leafwing", "Rocko", "Fira", "Breezy", "Mudster", "Volt", "Petal", "Stonewart", "Ember", "Aero", "Terran", "Zappy", "Flora", "Boulder", "Blaze", "Gale", "Claymore", "Shocky", "Vinea", "Pebble", "Inferno", "Zephyr", "Dusty", "Jolty", "Rootlet", "Grit", "Scorch", "Twister", "Loam", "Statix", "Sprout", "Crag", "Cinder", "Gust", "Quake", "Dynamo", "Blossom"];
+        const facts = [
+            "Le encanta la lluvia.", "Puede camuflarse como una roca.", "Genera electricidad estática.", "Sus alas huelen a menta.", "Es más pesado de lo que parece.", "Su aliento es cálido.", "Puede predecir el clima.", "Se baña en charcos de lodo.", "Brilla en la oscuridad.", "Realiza la fotosíntesis.", "Duerme durante días.", "Deja un rastro de cenizas.", "Vuela sin hacer ruido.", "Se comunica con las plantas.", "Suena como un trueno.", "Atrae a las mariposas.", "Le gusta coleccionar piedras.", "Su temperatura corporal es alta.", "Crea pequeños tornados.", "Se endurece bajo el sol.", "Da pequeñas descargas al tocarlo.", "Sus raíces son muy profundas.", "Es amigo de los insectos.", "Se asusta con el agua.", "Le gusta volar cometas.", "Huele a tierra mojada.", "Su pelaje se eriza.", "Crece hacia el sol.", "Es extremadamente terco.", "Puede encender fogatas.", "Cambia de dirección con el viento.", "Construye su casa bajo tierra.", "Se alimenta de energía.", "Sus hojas cambian de color.", "Escala paredes verticales.", "Le teme a la nieve.", "Puede imitar el sonido de las aves.", "Causa pequeños temblores.", "Se recarga durante tormentas.", "Florece una vez al año."
+        ];
+        const types = ["Agua", "Roca", "Eléctrico", "Planta", "Roca", "Fuego", "Viento", "Tierra", "Eléctrico", "Planta", "Roca", "Fuego", "Viento", "Tierra", "Eléctrico", "Planta", "Roca", "Fuego", "Viento", "Tierra", "Eléctrico", "Planta", "Roca", "Fuego", "Viento", "Tierra", "Eléctrico", "Planta", "Roca", "Fuego", "Viento", "Tierra", "Eléctrico", "Planta", "Roca", "Fuego", "Viento", "Tierra", "Eléctrico", "Planta"];
+        const habitats = ["Ríos", "Montañas", "Centrales", "Bosques", "Cuevas", "Volcanes", "Cielos", "Pantanos", "Ciudades", "Praderas", "Desiertos", "Llanuras", "Tormentas", "Campos", "Fábricas", "Jardines", "Canteras", "Incendios", "Tornados", "Minas", "Postes de luz", "Viñedos", "Playas", "Géiseres", "Corrientes de aire", "Páramos", "Baterías", "Invernaderos", "Acantilados", "Hogueras", "Ráfagas", "Barrizales", "Redes eléctricas", "Huertos", "Peñascos", "Brasas", "Ventiscas", "Fallas tectónicas", "Plantas de energía", "Campos de flores"];
+
+        let artemones = [];
+        for (let i = 0; i < TOTAL_ARTEMONES; i++) {
+            const location = generateRandomPoint(TEQUENDAMA_COORDS, RADIUS_METERS);
+            artemones.push({
+                id: i,
+                name: names[i] || `Artemón #${i + 1}`,
+                fact: facts[i] || "Un misterioso Artemón sin datos.",
+                type: types[i] || "Desconocido",
+                habitat: habitats[i] || "Desconocido",
+                height: (Math.random() * (2.0 - 0.2) + 0.2).toFixed(2),
+                weight: (Math.random() * (100 - 0.5) + 0.5).toFixed(1),
+                lat: location.lat,
+                lon: location.lon,
+                captured: false,
+                marker: null,
+                qrValue: `tequendama-trails-artemon-${i}`
+            });
+        }
+        return artemones;
+    }
+    
+    function getDistance(pos1, pos2) {
+        if (!pos1 || !pos2) return Infinity;
+        const R = 6371e3;
+        const φ1 = pos1.lat * Math.PI/180;
+        const φ2 = pos2.lat * Math.PI/180;
+        const Δφ = (pos2.lat-pos1.lat) * Math.PI/180;
+        const Δλ = (pos2.lon-pos1.lon) * Math.PI/180;
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    function showToast(message) {
+        toastMessage.textContent = message;
+        toast.classList.remove('hidden');
+        toast.classList.add('toast-notification');
+        setTimeout(() => {
+            toast.classList.remove('toast-notification');
+            toast.classList.add('hidden');
+        }, 4000);
+    }
+
+    // --- LOCAL STORAGE ---
+    function saveState() {
+        const stateToSave = {
+            artemones: state.artemones.map(a => ({ id: a.id, captured: a.captured })),
+        };
+        localStorage.setItem('tequendamaTrailsState', JSON.stringify(stateToSave));
+    }
+
+    function loadState() {
+        const savedState = localStorage.getItem('tequendamaTrailsState');
+        state.artemones = generateArtemones();
+        if (savedState) {
+            const parsedState = JSON.parse(savedState);
+            parsedState.artemones.forEach(savedArtemon => {
+                const artemon = state.artemones.find(a => a.id === savedArtemon.id);
+                if (artemon) {
+                    artemon.captured = savedArtemon.captured;
+                }
+            });
+        }
+    }
+
+    // --- UI & VIEW MANAGEMENT ---
+    function switchView(viewId) {
+        Object.values(views).forEach(view => view.classList.add('hidden'));
+        if (views[viewId]) {
+            views[viewId].classList.remove('hidden');
+        }
+        
+        navButtons.forEach(btn => {
+            if (btn.dataset.view === viewId) {
+                btn.classList.remove('text-gray-400');
+                btn.classList.add('text-emerald-400');
+            } else {
+                btn.classList.add('text-gray-400');
+                btn.classList.remove('text-emerald-400');
+            }
+        });
+
+        const isMap = viewId === 'map';
+        locateMeButton.style.display = isMap ? 'block' : 'none';
+        document.getElementById('simulation-controls').style.display = isMap ? 'flex' : 'none';
+
+        if (viewId === 'inventory') updateInventoryView();
+        if (viewId === 'profile') updateProfileView();
+    }
+
+    function updateInventoryView() {
+        const grid = document.getElementById('inventory-grid');
+        const countSpan = document.getElementById('inventory-count');
+        const progressBar = document.getElementById('inventory-progress');
+        
+        grid.innerHTML = '';
+        const capturedCount = state.artemones.filter(a => a.captured).length;
+        countSpan.textContent = capturedCount;
+        progressBar.style.width = `${(capturedCount / TOTAL_ARTEMONES) * 100}%`;
+
+        state.artemones.forEach(artemon => {
+            const artemonEl = document.createElement('div');
+            artemonEl.className = `p-2 rounded-lg flex flex-col items-center justify-center aspect-square ${artemon.captured ? 'bg-emerald-800' : 'bg-gray-700'}`;
+            artemonEl.innerHTML = `
+                <div class="w-12 h-12 flex items-center justify-center rounded-full ${artemon.captured ? 'bg-emerald-500' : 'bg-gray-600'} mb-2 text-2xl">
+                    ${artemon.captured ? '✔️' : '?'}
+                </div>
+                <span class="text-xs text-center font-semibold truncate w-full">${artemon.name}</span>
+            `;
+            grid.appendChild(artemonEl);
+        });
+    }
+
+    function updateProfileView() {
+        const capturedCount = state.artemones.filter(a => a.captured).length;
+        document.getElementById('profile-progress').textContent = `${capturedCount}/${TOTAL_ARTEMONES}`;
+    }
+    
+    function showFinalReward() {
+        const date = new Date();
+        document.getElementById('completion-date').textContent = date.toLocaleDateString('es-ES');
+        finalRewardScreen.classList.remove('hidden');
+    }
+
+    // --- MAP & GEOLOCATION ---
+    function initMap() {
+        state.map = L.map('map', { zoomControl: false }).setView([TEQUENDAMA_COORDS.lat, TEQUENDAMA_COORDS.lon], 17);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            maxZoom: 20
+        }).addTo(state.map);
+
+        const playerIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: `<div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-lg"></div>`,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+        state.player.marker = L.marker([TEQUENDAMA_COORDS.lat, TEQUENDAMA_COORDS.lon], { icon: playerIcon }).addTo(state.map);
+
+        drawArtemonMarkers();
+        
+        state.map.on('click', onMapClick);
+        
+        handleLocationError({ message: "Starting in simulation mode." });
+    }
+
+    function drawArtemonMarkers() {
+        state.artemones.forEach(artemon => {
+            if (artemon.marker) {
+                state.map.removeLayer(artemon.marker);
+            }
+            const isCaptured = artemon.captured;
+            const iconHtml = isCaptured 
+                ? `<div class="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center opacity-50"><span class="text-lg">✔️</span></div>`
+                : `<div class="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg"><span class="text-lg">💎</span></div>`;
+            
+            const artemonIcon = L.divIcon({
+                className: 'artemon-icon',
+                html: iconHtml,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+            
+            artemon.marker = L.marker([artemon.lat, artemon.lon], { icon: artemonIcon })
+                .addTo(state.map)
+                .on('click', (e) => {
+                    L.DomEvent.stopPropagation(e);
+                    onArtemonMarkerClick(artemon);
+                });
+        });
+    }
+
+    function onMapClick(e) {
+        if (state.isSimulationMode) {
+            const { lat, lng } = e.latlng;
+            updatePlayerPosition({ coords: { latitude: lat, longitude: lng } });
+        } else {
+            showToast("Modo simulación desactivado. Actívalo para moverte con un clic.");
+        }
+    }
+
+    function onArtemonMarkerClick(artemon) {
+        if (artemon.captured) {
+            showToast(`${artemon.name} ya ha sido capturado.`);
+            return;
+        }
+        const distance = getDistance(state.player.position, { lat: artemon.lat, lon: artemon.lon });
+        if (distance <= PROXIMITY_THRESHOLD) {
+            state.activeArtemonToScan = artemon;
+            startScanner();
+        } else {
+            showToast(`Acércate más a ${artemon.name}. Estás a ${Math.round(distance)} metros.`);
+        }
+    }
+
+    function updatePlayerPosition(pos) {
+        const { latitude, longitude } = pos.coords;
+        state.player.position = { lat: latitude, lon: longitude };
+        if (state.player.marker) {
+            state.player.marker.setLatLng([latitude, longitude]);
+        }
+        checkProximity();
+    }
+    
+    function checkProximity() {
+        let nearbyArtemonFound = false;
+        state.artemones.forEach(artemon => {
+            if (!artemon.captured && artemon.marker) {
+                const iconElement = artemon.marker.getElement()?.querySelector('.artemon-icon > div');
+                if (!iconElement) return;
+                
+                const distance = getDistance(state.player.position, { lat: artemon.lat, lon: artemon.lon });
+                if (distance <= PROXIMITY_THRESHOLD) {
+                    if (!iconElement.classList.contains('pulse-animation')) {
+                        iconElement.classList.remove('bg-yellow-400');
+                        iconElement.classList.add('bg-emerald-400', 'pulse-animation');
+                        if (!nearbyArtemonFound) {
+                           showToast(`¡${artemon.name} está cerca! Toca la gema para escanear.`);
+                           nearbyArtemonFound = true;
+                        }
+                    }
+                } else {
+                    if (iconElement.classList.contains('pulse-animation')) {
+                        iconElement.classList.remove('bg-emerald-400', 'pulse-animation');
+                        iconElement.classList.add('bg-yellow-400');
+                    }
+                }
+            }
+        });
+    }
+
+    function handleLocationError(error) {
+        console.warn("Geolocation info:", error.message);
+        if (!state.player.position) {
+            state.player.position = { lat: TEQUENDAMA_COORDS.lat, lon: TEQUENDAMA_COORDS.lon };
+            if (state.player.marker) {
+                state.player.marker.setLatLng([state.player.position.lat, state.player.position.lon]);
+            }
+            if (state.map) {
+                state.map.setView([state.player.position.lat, state.player.position.lon], 18);
+            }
+            showToast("Modo simulación activado. Haz clic en el mapa para moverte.");
+            setTimeout(checkProximity, 500); 
+        }
+    }
+
+    function locateUser() {
+        if (state.isSimulationMode) {
+            showToast("Desactiva el modo simulación para usar tu ubicación real.");
+            return;
+        }
+        showToast("Buscando tu ubicación...");
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                showToast("¡Ubicación encontrada!");
+                updatePlayerPosition(pos);
+                state.map.flyTo([pos.coords.latitude, pos.coords.longitude], 18);
+            }, 
+            handleLocationError, 
+            { enableHighAccuracy: true, timeout: 5000 }
+        );
+    }
+
+    // --- QR SCANNER ---
+    function startScanner() {
+        appContainer.classList.add('hidden');
+        scannerView.classList.remove('hidden');
+        scannerView.classList.add('flex');
+
+        if (!state.qrScanner) {
+            state.qrScanner = new Html5Qrcode("qr-reader");
+        }
+        
+        const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
+            let minEdgePercentage = 0.7;
+            let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+            let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+            return { width: qrboxSize, height: qrboxSize };
+        }
+
+        state.qrScanner.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: qrboxFunction },
+            onScanSuccess,
+            (error) => { /* Ignore scan failure */ }
+        ).catch(err => {
+            console.error("Error al iniciar el scanner:", err);
+            showToast("No se pudo iniciar la cámara.");
+            stopScanner();
+        });
+    }
+
+    function stopScanner() {
+        if (state.qrScanner && state.qrScanner.isScanning) {
+            state.qrScanner.stop().catch(err => {
+                console.error("Error al detener el scanner:", err);
+            });
+        }
+        scannerView.classList.add('hidden');
+        scannerView.classList.remove('flex');
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+        if (state.activeArtemonToScan) {
+            const artemonToCapture = state.activeArtemonToScan;
+            stopScanner();
+            captureArtemon(artemonToCapture);
+        }
+    }
+
+    // --- GAME LOGIC ---
+    function captureArtemon(artemon) {
+        if (artemon.captured) return;
+        artemon.captured = true;
+        
+        // Populate and show the info drawer
+        drawerArtemonName.textContent = artemon.name;
+        drawerArtemonFact.textContent = artemon.fact;
+        drawerArtemonType.textContent = artemon.type;
+        drawerArtemonHabitat.textContent = artemon.habitat;
+        drawerArtemonHeight.textContent = `${artemon.height} m`;
+        drawerArtemonWeight.textContent = `${artemon.weight} kg`;
+        
+        appContainer.classList.add('hidden');
+        artemonInfoDrawer.classList.remove('hidden');
+        artemonInfoDrawer.classList.add('flex');
+
+        drawArtemonMarkers();
+        saveState();
+        
+        const capturedCount = state.artemones.filter(a => a.captured).length;
+        if (capturedCount === TOTAL_ARTEMONES) {
+            setTimeout(showFinalReward, 1000);
+        }
+    }
+    
+    function showResetConfirmation() {
+        confirmResetModal.classList.remove('hidden');
+    }
+
+    function hideResetConfirmation() {
+        confirmResetModal.classList.add('hidden');
+    }
+
+    function performReset() {
+        localStorage.removeItem('tequendamaTrailsState');
+        window.location.reload();
+    }
+
+    function toggleSimulation() {
+        state.isSimulationMode = !state.isSimulationMode;
+        if (state.isSimulationMode) {
+            simulationToggle.classList.add('sim-on', 'bg-emerald-500');
+            simulationToggle.classList.remove('bg-gray-600');
+            showToast("Simulación activada.");
+            if (state.locationWatcherId) {
+                navigator.geolocation.clearWatch(state.locationWatcherId);
+                state.locationWatcherId = null;
+            }
+        } else {
+            simulationToggle.classList.remove('sim-on', 'bg-emerald-500');
+            simulationToggle.classList.add('bg-gray-600');
+            showToast("Simulación desactivada. Usando GPS real.");
+            state.locationWatcherId = navigator.geolocation.watchPosition(updatePlayerPosition, handleLocationError, { enableHighAccuracy: true });
+        }
+    }
+
+    // --- INITIALIZATION & EVENT LISTENERS ---
+    function init() {
+        loadState();
+        initMap();
+        switchView('map');
+
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => switchView(button.dataset.view));
+        });
+
+        locateMeButton.addEventListener('click', locateUser);
+        closeScannerButton.addEventListener('click', () => {
+            stopScanner();
+            appContainer.classList.remove('hidden');
+        });
+        resetButton.addEventListener('click', showResetConfirmation);
+        restartGameButton.addEventListener('click', showResetConfirmation);
+        cancelResetButton.addEventListener('click', hideResetConfirmation);
+        confirmResetButton.addEventListener('click', () => {
+            hideResetConfirmation();
+            performReset();
+        });
+        
+        closeDrawerButton.addEventListener('click', () => {
+            artemonInfoDrawer.classList.add('hidden');
+            artemonInfoDrawer.classList.remove('flex');
+            appContainer.classList.remove('hidden');
+        });
+
+        simulationToggle.addEventListener('click', toggleSimulation);
+
+        simulateScanButton.addEventListener('click', () => {
+            onScanSuccess("simulated-qr-code", {}); 
+        });
+    }
+
+    init();
+});
+</script>
 </body>
 </html>
