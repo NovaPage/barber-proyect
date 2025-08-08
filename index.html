@@ -275,13 +275,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function generateArtemones() {
-        const names = ["Aquafluff", "Geodude", "Sparky", "Leafwing", "Rocko", "Fira", "Breezy", "Mudster", "Volt", "Petal", "Stonewart", "Ember", "Aero", "Terran", "Zappy", "Flora", "Boulder", "Blaze", "Gale", "Claymore", "Shocky", "Vinea", "Pebble", "Inferno", "Zephyr", "Dusty", "Jolty", "Rootlet", "Grit", "Scorch", "Twister", "Loam", "Statix", "Sprout", "Crag", "Cinder", "Gust", "Quake", "Dynamo", "Blossom"];
-        const facts = [
-            "Le encanta la lluvia.", "Puede camuflarse como una roca.", "Genera electricidad estática.", "Sus alas huelen a menta.", "Es más pesado de lo que parece.", "Su aliento es cálido.", "Puede predecir el clima.", "Se baña en charcos de lodo.", "Brilla en la oscuridad.", "Realiza la fotosíntesis.", "Duerme durante días.", "Deja un rastro de cenizas.", "Vuela sin hacer ruido.", "Se comunica con las plantas.", "Suena como un trueno.", "Atrae a las mariposas.", "Le gusta coleccionar piedras.", "Su temperatura corporal es alta.", "Crea pequeños tornados.", "Se endurece bajo el sol.", "Da pequeñas descargas al tocarlo.", "Sus raíces son muy profundas.", "Es amigo de los insectos.", "Se asusta con el agua.", "Le gusta volar cometas.", "Huele a tierra mojada.", "Su pelaje se eriza.", "Crece hacia el sol.", "Es extremadamente terco.", "Puede encender fogatas.", "Cambia de dirección con el viento.", "Construye su casa bajo tierra.", "Se alimenta de energía.", "Sus hojas cambian de color.", "Escala paredes verticales.", "Le teme a la nieve.", "Puede imitar el sonido de las aves.", "Causa pequeños temblores.", "Se recarga durante tormentas.", "Florece una vez al año."
+        const names = [
+            "Mural Solar", "Escultura Raíz", "Lienzo Andino", "Vitral de Agua", "Totem Urbano", "Fragmento de Luz", "Piedra Tallada", "Textil de Viento", "Cerámica Viva", "Instalación Verde",
+            "Grabado Lunar", "Collage de Sueños", "Escultura de Bronce", "Mosaico de Esperanza", "Lienzo de Tierra", "Obra Efímera", "Pintura Abstracta", "Escultura de Madera", "Fotografía Ancestral", "Arte Digital",
+            "Dibujo Orgánico", "Escultura de Papel", "Mural de Comunidad", "Instalación Sonora", "Obra Interactiva", "Pintura de Agua", "Escultura de Hierro", "Lienzo de Fuego", "Arte Reciclado", "Mosaico Natural", "Obra Colectiva",
+            "Escultura de Piedra", "Pintura de Cielo", "Instalación de Luz", "Arte Textil", "Mural de Historia", "Escultura de Arena", "Lienzo de Bosque", "Obra de Movimiento", "Arte de Tierra", "Instalación de Color"
         ];
-        const types = ["Agua", "Roca", "Eléctrico", "Planta", "Roca", "Fuego", "Viento", "Tierra", "Eléctrico", "Planta", "Roca", "Fuego", "Viento", "Tierra", "Eléctrico", "Planta", "Roca", "Fuego", "Viento", "Tierra", "Eléctrico", "Planta", "Roca", "Fuego", "Viento", "Tierra", "Eléctrico", "Planta", "Roca", "Fuego", "Viento", "Tierra", "Eléctrico", "Planta", "Roca", "Fuego", "Viento", "Tierra", "Eléctrico", "Planta"];
-        const habitats = ["Ríos", "Montañas", "Centrales", "Bosques", "Cuevas", "Volcanes", "Cielos", "Pantanos", "Ciudades", "Praderas", "Desiertos", "Llanuras", "Tormentas", "Campos", "Fábricas", "Jardines", "Canteras", "Incendios", "Tornados", "Minas", "Postes de luz", "Viñedos", "Playas", "Géiseres", "Corrientes de aire", "Páramos", "Baterías", "Invernaderos", "Acantilados", "Hogueras", "Ráfagas", "Barrizales", "Redes eléctricas", "Huertos", "Peñascos", "Brasas", "Ventiscas", "Fallas tectónicas", "Plantas de energía", "Campos de flores"];
-
+        const facts = [
+            "Inspirado en la energía del sol.", "Representa la conexión con la naturaleza.", "Evoca los paisajes de la región andina.", "Refleja la fluidez y movimiento del agua.", "Creado por artistas locales.", "Fragmentos que capturan la luz natural.", "Tallada a mano por artesanos.", "Diseñada para interactuar con el viento.", "Cerámica que respira y cambia con el clima.", "Instalación que promueve el cuidado ambiental.",
+            "Grabado que narra historias ancestrales.", "Collage hecho con materiales reciclados.", "Escultura que simboliza la fuerza.", "Mosaico realizado por la comunidad.", "Lienzo que utiliza pigmentos naturales.", "Obra que desaparece con el tiempo.", "Pintura que juega con la abstracción.", "Escultura hecha de madera recuperada.", "Fotografía que rescata la memoria local.", "Arte digital interactivo.",
+            "Dibujo inspirado en formas orgánicas.", "Escultura creada con papel reciclado.", "Mural pintado por niños y adultos.", "Instalación que produce sonidos naturales.", "Obra que invita a la participación.", "Pintura realizada con agua de río.", "Escultura forjada en hierro.", "Lienzo que utiliza fuego como elemento.", "Arte hecho con materiales reutilizados.", "Mosaico formado por piedras del lugar.",
+            "Obra creada en colaboración.", "Escultura de piedra local.", "Pintura inspirada en el cielo nocturno.", "Instalación que utiliza luz solar.", "Arte textil tradicional.", "Mural que cuenta la historia del pueblo.", "Escultura efímera de arena.", "Lienzo pintado con pigmentos de bosque.", "Obra que incorpora movimiento.", "Arte que utiliza tierra como base.", "Instalación que explora el color."
+        ];
+        const types = [
+            "Mural", "Escultura", "Lienzo", "Vitral", "Totem", "Instalación", "Piedra", "Textil", "Cerámica", "Instalación",
+            "Grabado", "Collage", "Escultura", "Mosaico", "Lienzo", "Obra", "Pintura", "Escultura", "Fotografía", "Arte",
+            "Dibujo", "Escultura", "Mural", "Instalación", "Obra", "Pintura", "Escultura", "Lienzo", "Arte", "Mosaico",
+            "Obra", "Escultura", "Pintura", "Instalación", "Arte", "Mural", "Escultura", "Lienzo", "Obra", "Instalación"
+        ];
+        const habitats = [
+            "Plaza Central", "Parque Natural", "Museo Local", "Río Principal", "Centro Cultural", "Jardín Urbano", "Mirador", "Sendero de Viento", "Plaza de Cerámica", "Bosque Nativo",
+            "Sala de Exposiciones", "Galería Abierta", "Rotonda", "Escuela Comunitaria", "Café Cultural", "Espacio Público", "Biblioteca", "Teatro", "Casa de la Cultura", "Zona Digital",
+            "Mercado Artesanal", "Centro de Reciclaje", "Mural Comunitario", "Auditorio", "Plaza Interactiva", "Fuente de Agua", "Forja Local", "Plaza del Fuego", "Zona de Reciclaje", "Jardín de Piedras",
+            "Espacio Colaborativo", "Cantera", "Terraza", "Solar", "Taller Textil", "Mural Histórico", "Playa de Arena", "Bosque de Arte", "Plaza de Movimiento", "Zona de Tierra", "Galería de Color"
+        ];
+        
         let artemones = [];
         for (let i = 0; i < TOTAL_ARTEMONES; i++) {
             const location = generateRandomPoint(TEQUENDAMA_COORDS, RADIUS_METERS);
