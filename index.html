@@ -300,22 +300,46 @@ document.addEventListener('DOMContentLoaded', () => {
             "Espacio Colaborativo", "Cantera", "Terraza", "Solar", "Taller Textil", "Mural Histórico", "Playa de Arena", "Bosque de Arte", "Plaza de Movimiento", "Zona de Tierra", "Galería de Color"
         ];
         
+            const fixedLocations = [
+            { lat: 4.6147722, lon: -74.0701954 },
+            { lat: 4.6147694, lon: -74.0701869 },
+            { lat: 4.6149793, lon: -74.07033 },
+            { lat: 4.6149306, lon: -74.0705328 },
+            { lat: 4.6144714, lon: -74.0709544 },
+            { lat: 4.6143928, lon: -74.0709003 },
+            { lat: 4.6141952, lon: -74.0709437 },
+            { lat: 4.614345, lon: -74.0708715 },
+            { lat: 4.6142461, lon: -74.0706759 },
+            { lat: 4.6143163, lon: -74.0703172 },
+            { lat: 4.6141936, lon: -74.0698178 },
+            { lat: 4.6142623, lon: -74.0693127 },
+            { lat: 4.614036, lon: -74.0697378 },
+            { lat: 4.6139429, lon: -74.0696228 },
+            { lat: 4.6135901, lon: -74.0694408 },
+            { lat: 4.6136348, lon: -74.0703037 },
+            { lat: 4.6138663, lon: -74.0702868 },
+            { lat: 4.6139182, lon: -74.0704121 },
+            { lat: 4.6139394, lon: -74.0702991 },
+            { lat: 4.615045, lon: -74.0697762 },
+            { lat: 4.6155993, lon: -74.0696686 },
+            { lat: 4.6154596, lon: -74.0694511 },
+            { lat: 4.6157783, lon: -74.0690438 },
+            { lat: 4.6162104, lon: -74.0691602 },
+            { lat: 4.6133679, lon: -74.070183 },
+            { lat: 4.6128791, lon: -74.0705309 },
+            { lat: 4.6127157, lon: -74.0706895 },
+            { lat: 4.6128486, lon: -74.0707218 },
+            { lat: 4.6133829, lon: -74.0704282 },
+            { lat: 4.6136251, lon: -74.0706342 }
+        ];
         let artemones = [];
         for (let i = 0; i < TOTAL_ARTEMONES; i++) {
-            const location = generateRandomPoint(TEQUENDAMA_COORDS, RADIUS_METERS);
+            const location = fixedLocations[i] || generateRandomPoint(TEQUENDAMA_COORDS, RADIUS_METERS);
             artemones.push({
-                id: i,
-                name: names[i] || `Artemón #${i + 1}`,
-                fact: facts[i] || "Un misterioso Artemón sin datos.",
-                type: types[i] || "Desconocido",
-                habitat: habitats[i] || "Desconocido",
-                height: (Math.random() * (2.0 - 0.2) + 0.2).toFixed(2),
-                weight: (Math.random() * (100 - 0.5) + 0.5).toFixed(1),
+                // ...propiedades...
                 lat: location.lat,
                 lon: location.lon,
-                captured: false,
-                marker: null,
-                qrValue: `tequendama-trails-artemon-${i}`
+                // ...resto...
             });
         }
         return artemones;
